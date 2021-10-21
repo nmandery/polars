@@ -93,6 +93,25 @@ mod test {
     }
 
     #[test]
+    fn test_serde_bincode() -> Result<()> {
+        let ca = UInt32Chunked::new_from_opt_slice("foo", &[Some(1), None, Some(2)]);
+
+        let bytes = bincode::serialize(&ca).unwrap();
+
+        let out = bincode::deserialize::<Series>(&bytes).unwrap();
+        assert!(ca.into_series().series_equal_missing(&out));
+
+        let ca = Utf8Chunked::new_from_opt_slice("foo", &[Some("foo"), None, Some("bar")]);
+
+        let bytes = bincode::serialize(&ca).unwrap();
+
+        let out = bincode::deserialize::<Series>(&bytes).unwrap();
+        assert!(ca.into_series().series_equal_missing(&out));
+
+        Ok(())
+    }
+
+    #[test]
     fn test_serde_df() {
         let s = Series::new("foo", &[1, 2, 3]);
         let s1 = Series::new("bar", &[Some(true), None, Some(false)]);
@@ -102,6 +121,19 @@ mod test {
         let json = serde_json::to_string(&df).unwrap();
         dbg!(&json);
         let out = serde_json::from_str::<DataFrame>(&json).unwrap();
+        assert!(df.frame_equal_missing(&out));
+    }
+
+    #[test]
+    fn test_serde_df_bincode() {
+        let s = Series::new("foo", &[1, 2, 3]);
+        let s1 = Series::new("bar", &[Some(true), None, Some(false)]);
+        let s_list = Series::new("list", &[s.clone(), s.clone(), s.clone()]);
+
+        let df = DataFrame::new(vec![s, s_list, s1]).unwrap();
+        let bytes = bincode::serialize(&df).unwrap();
+
+        let out = bincode::deserialize::<DataFrame>(&bytes).unwrap();
         assert!(df.frame_equal_missing(&out));
     }
 }
